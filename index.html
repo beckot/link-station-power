@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Link Station Power Calculator</title>
+    </head>
+    <body>
+
+        <h1>Add link stations:</h1>
+        
+        <div id="status-message-link-stations"></div>
+
+        <form name="link-station-info">
+            X:<br>
+            <input id="link-x" type="number" min="0" step= "0.01" required/><br><br>
+            Y:<br>
+            <input id="link-y" type="number" min="0" step= "0.01" required /><br><br>
+            Reach:<br>
+            <input id="link-reach" type="number" min="0" step= "0.01" required /><br><br>
+            <input type="button" value="Add link station" onclick="addLinkStation()" />
+            <input type="reset" value="Clear form">
+        </form>
+        
+        <div id="link-stations"></div>      
+        
+        <h1>Get maximum device power:</h1>
+
+        <div id="status-message-device"></div>
+        
+        <form name="device-coordinates">
+            X:<br>
+            <input id="device-x" type="number" min="0" step= "0.01" required /><br><br>
+            Y:<br>
+            <input id="device-y" type="number" min="0" step= "0.01" required /><br><br>
+            <input type="button" value="Get the best link station" onclick="getBestLinkStationForDevice()" />
+            <input type="reset" value="Clear form">
+        </form>
+
+        
+        
+
+        <script type="text/javascript">
+        
+            
+            // Initiate the link station list.
+            const linkStations = [];
+
+            // Functions:
+            
+            // Add link station.
+            function addLinkStation() {
+                
+                // Validate inputs.
+                let inputs = document.forms["link-station-info"].getElementsByTagName("input");
+                for( i = 0; i < inputs.length; i++) {
+
+                    // Check non-button inputs only.
+                    if (inputs[i].type != "button") {
+                        
+                        if(inputs[i].checkValidity() == false) {
+                            
+                            // If a field does not pass validation, print the error message on page.
+                            const linkStationStatusMessage = document.getElementById("status-message-link-stations")
+                            linkStationStatusMessage.innerHTML = "Error: Enter a positive numerical value for each link station field.";
+                            linkStationStatusMessage.classList.add("error");
+                            return;            
+                        }
+                    }
+                    
+                }
+                                
+
+                // Formulate a JSON object including the link station stats to add to the array.
+                let linkStation =  { 
+                    
+                    "id": linkStations.length + 1,
+                    "x": document.getElementById("link-x").value,
+                    "y": document.getElementById("link-y").value,
+                    "reach": document.getElementById("link-reach").value
+                }
+                
+                linkStations.push(linkStation);
+                
+                // Print the link station on the page.
+                const p = document.createElement('p');
+                p.innerHTML =   "Station #" + linkStation.id + "<br>" +
+                                "X: " + linkStation.x + "<br>" +
+                                "Y: " + linkStation.y + "<br>" +
+                                "Reach: " + linkStation.reach;
+                document.getElementById('link-stations').appendChild(p)
+                
+                return;
+            }
+        
+   
+            // Get the best link station.
+            function getBestLinkStationForDevice() {
+                
+                // Validate inputs.
+                let inputs = document.forms["device-coordinates"].getElementsByTagName("input");
+                for( i = 0; i < inputs.length; i++) {
+
+                    // check non-button inputs only.
+                    if (inputs[i].type != "button") {
+                        
+                        if(inputs[i].checkValidity() == false) {
+                            
+                            // If a field does not pass validation, print the error message on page.
+                            let deviceStatusMessage = document.getElementById("status-message-device")
+                            deviceStatusMessage.innerHTML = "Error: Enter a positive numerical value for each device coordinate.";
+                            deviceStatusMessage.classList.add("error");
+                            return;            
+                        }
+                    }
+                    
+                }
+
+                 // Formulate a JSON object including the link station stats to add to the array.
+                 const deviceCoordinates =  { 
+                    
+                    "x": document.getElementById("device-x").value,
+                    "y": document.getElementById("device-y").value
+
+                 }
+                 
+                 // Calculate the best station - Step #1:
+                 // Extract power that each link station gives to the device.
+                 const devicePowers = linkStations.map( function(station) {
+                    return calculateDevicePowerFromStation(station, deviceCoordinates)
+                });
+
+                 // Calculate the best station - Step #2:
+                 // Get the maximum power from all powers.
+                 const powerMax = Math.max(...devicePowers);
+
+                 // Calculate the best station - Step #3:
+                 // Filter the original array using the Max power to get a list of viable stations.
+                const viableLinkStations = linkStations.filter(function(station) {
+                    return calculateDevicePowerFromStation(station, deviceCoordinates) === powerMax;
+                });    
+                
+                // Print a message on the page depending on the status.
+
+                // start with a placeholder paragraph
+
+                let statusHTML = "";
+
+                if(viableLinkStations.length > 0) {
+                                        
+                    statusHTML = "Best link station for point " +
+                                    deviceCoordinates.x + "," + 
+                                    deviceCoordinates.y + " is " +
+                                    viableLinkStations[0].x + "," +
+                                    viableLinkStations[0].y + " with power " +
+                                    powerMax
+                    
+                    // Print additional note in case there are several matches.
+                    if(viableLinkStations.length > 1) {
+                        statusHTML +=    "<br>" +
+                                            "<br>" +
+                                            "Note: all the following link stations match these stats: " + 
+                                            viableLinkStations.map(x => x.id).join();
+                
+                    }
+                } else {
+                    statusHTML = "No link station within reach for point " + 
+                                    deviceCoordinates.x + "," +
+                                    deviceCoordinates.y 
+                }
+
+                let deviceStatusMessage = document.getElementById("status-message-device")
+                deviceStatusMessage.innerHTML = statusHTML;
+                // add a success indicator to help styling.
+                deviceStatusMessage.classList.remove("error");
+                deviceStatusMessage.classList.add("success");
+                    
+            }
+
+
+
+            // Distance calculation between two points (X,Y).
+            function calculateDistance(p, q) {
+                var dx   = p.x - q.x;         
+                var dy   = p.y - q.y;         
+                var dist = Math.sqrt( dx*dx + dy*dy ); 
+                return dist;
+            }
+
+
+
+            // Power calculation to a device from a link station at a certain distance.
+            function calculatePower(reach, distance) {
+                if (distance > reach) return 0;
+                return Math.pow(reach - distance, 2);
+            }
+
+
+
+            // Power calculation using distance and device coordinates.
+            function calculateDevicePowerFromStation(stationStats, deviceStats) {
+                const distanceFromDeviceToStation = calculateDistance(stationStats, deviceStats);
+                return calculatePower(stationStats.reach, distanceFromDeviceToStation);      
+            }
+                    
+
+        </script>
+    
+    </body>
+</html>
