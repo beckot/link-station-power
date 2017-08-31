@@ -17,7 +17,7 @@ function addLinkStation() {
 
     // Validate inputs.                
     let inputs = document.forms["link-station-info"].getElementsByTagName("input");
-    for (i = 0; i < inputs.length; i++) {
+    for (let i = 0; i < inputs.length; i++) {
 
         // Check non-button inputs only.
         if (inputs[i].type != "button") {
@@ -68,7 +68,7 @@ function getBestLinkStationForDevice() {
 
     // Validate form inputs.   
     let inputs = document.forms["device-coordinates"].getElementsByTagName("input");
-    for (i = 0; i < inputs.length; i++) {
+    for (let i = 0; i < inputs.length; i++) {
 
         // check non-button inputs only.
         if (inputs[i].type != "button") {
@@ -98,29 +98,27 @@ function getBestLinkStationForDevice() {
     // Get the maximum power from all powers.
     const powerMax = Math.max(...devicePowers);
 
-    // Reset the status message - accoun for possible errors in entries. 
+    // Reset the status message - account for possible errors in entries. 
     let statusHTML = "";
     node.classList.remove("alert-danger");
     node.classList.add("alert");
 
-    // Maximum power of 0 means no stations are within reach. In that case we want to end here and print out a suitable message.
+     // Maximum power of 0 means no stations are within reach. In that case we want to end here and print out a suitable message.
     if (powerMax === 0) {
         node.classList.add("alert-warning");
         statusHTML = "No link station within reach for point " +
             deviceCoordinates.x + "," +
             deviceCoordinates.y
 
+    
+
         // Step #3: Calculate the best station 
         // Otherwise we have at least one suitable station and need to get its' coordinates and power.    
     } else {
 
-        // Initiate an empty object where we gather all viable link stations.
-        let viableLinkStations = {};
-
         // Filter the original array using the Max power to get a list of viable stations.
-        viableLinkStations = linkStations.filter(s => calculateDevicePowerFromStation(s, deviceCoordinates) === powerMax);
+        const viableLinkStations = linkStations.filter(s => calculateDevicePowerFromStation(s, deviceCoordinates) === powerMax);
 
-        console.log(viableLinkStations);
 
         // Print a message on the page depending on the status.
 
@@ -147,12 +145,14 @@ function getBestLinkStationForDevice() {
             }
         }
 
-        // Update the status message.
-        node.innerHTML = statusHTML;
-        statusNode.appendChild(node);
-        return;
     }
+
+    // Update the status message.
+    node.innerHTML = statusHTML;
+    statusNode.appendChild(node);
+    return;
 }
+
 
 // ############################################
 // Helper functions
